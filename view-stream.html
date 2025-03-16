@@ -1,22 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>JSMpeg Stream Client</title>
-	<style type="text/css">
-		html, body {
-			background-color: #111;
-			text-align: center;
-		}
-	</style>
-	
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Stream with Face Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <script type="text/javascript" src="jsmpeg.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #111;
+      text-align: center;
+      color: white;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+  </style>
 </head>
 <body>
-	<canvas id="video-canvas"></canvas>
-	<script type="text/javascript" src="jsmpeg.min.js"></script>
-	<script type="text/javascript">
-		var canvas = document.getElementById('video-canvas');
-		var url = 'ws://'+document.location.hostname+':8082/';
-		var player = new JSMpeg.Player(url, {canvas: canvas});
-	</script>
+  <canvas id="video-canvas"></canvas>
+  <canvas id="overlay"></canvas>
+
+  <script>
+    // Initialize JSMpeg Player
+    const videoCanvas = document.getElementById('video-canvas');
+    const overlayCanvas = document.getElementById('overlay');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const url = 'ws://' + document.location.hostname + ':8082/';
+    const player = new JSMpeg.Player(url, { canvas: videoCanvas });
+
+    // Resize overlay to match video canvas
+    overlayCanvas.width = videoCanvas.width;
+    overlayCanvas.height = videoCanvas.height;
+
+    // Load face-api.js models
+    async function loadModels() {
+      const MODEL_URL = './models';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      console.log('Face detection model loaded');
+    }
+
+    // Perform face detection
+    async function detectFaces() {
+      if (!videoCanvas || !overlayCanvas) return;
+
+      const videoWidth = videoCanvas.width;
+      const videoHeight = videoCanvas.height;
+      overlayCtx.clearRect(0, 0, videoWidth, videoHeight);
+
+      const detections = await faceapi.detectAllFaces(
+        videoCanvas,
+        new faceapi.TinyFaceDetectorOptions()
+      );
+
+      // Draw face boxes on overlay
+      detections.forEach(detection => {
+        const { x, y, width, height } = detection.box;
+        overlayCtx.strokeStyle = '#00FF00';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(x, y, width, height);
+      });
+
+      requestAnimationFrame(detectFaces);
+    }
+
+    // Start application
+    (async function startApp() {
+      await loadModels();
+      detectFaces();
+    })();
+  </script>
 </body>
 </html>

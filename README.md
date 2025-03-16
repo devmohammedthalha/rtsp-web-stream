@@ -185,6 +185,15 @@ ffmpeg \
 	http://localhost:8081/supersecret
 ```
 
+# thalha - ffmpeg -r 30 -i "rtsp://admin:admin@192.168.25.12:1935" -f alsa -ac 2 -ar 44100 -i hw:0 -f mpegts -codec:v mpeg1video -s 640x480 -b:v 1000k -bf 0 -codec:a mp2 -b:a 128k -muxdelay 0.001 http://localhost:8081/supersecret
+
+# only error showing  - ffmpeg -loglevel error -r 30 -i "rtsp://admin:admin@192.168.25.12:1935" -f alsa -ac 2 -ar 44100 -i hw:0 -f mpegts -codec:v mpeg1video -s 640x480 -b:v 1000k -bf 0 -codec:a mp2 -b:a 128k -muxdelay 0.001 http://localhost:8081/supersecret
+
+# no audio - ffmpeg -r 30 -i "rtsp://admin:admin@192.168.25.12:1935" -f mpegts -codec:v mpeg1video -s 640x480 -b:v 1000k -bf 0 -muxdelay 0.001 http://localhost:8081/supersecret
+
+# no audio(show only error) - ffmpeg -loglevel error -r 30 -i "rtsp://admin:admin@192.168.25.12:1935" -f mpegts -codec:v mpeg1video -s 640x480 -b:v 1000k -bf 0 -muxdelay 0.001 http://localhost:8081/supersecret
+
+
 You should now see a live webcam image in your browser. 
 
 If ffmpeg failed to open the input video, it's likely that your webcam does not support the given resolution, format or framerate. To get a list of compatible modes run:
