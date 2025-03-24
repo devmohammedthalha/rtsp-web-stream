@@ -19,29 +19,31 @@
       top: 0;
       left: 0;
     }
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
   </style>
 </head>
 <body>
-  <canvas id="video-canvas"></canvas>
-  <canvas id="overlay"></canvas>
+  <canvas id="video-canvas" hidden></canvas>
+  <video id="video-player" autoplay muted playsinline height="560" width="720"></video>
+  <canvas id="canvas"></canvas>
 
   <script>
     // Initialize JSMpeg Player
     const videoCanvas = document.getElementById('video-canvas');
-    const overlayCanvas = document.getElementById('overlay');
-    const overlayCtx = overlayCanvas.getContext('2d');
+    const video = document.getElementById("video-player");
+
     const url = 'ws://' + document.location.hostname + ':8082/';
     const player = new JSMpeg.Player(url, { canvas: videoCanvas });
 
-    // // Resize overlay to match video canvas
-    // overlayCanvas.width = videoCanvas.width;
-    // overlayCanvas.height = videoCanvas.height;
+    function convertCanvasToVideo() {
+    const stream = videoCanvas.captureStream(30); // Capture canvas as a media stream
+    video.srcObject = stream;
+
+    // Ensure video plays after assigning stream
+    video.play().catch(e => console.error("Autoplay prevented:", e));
+  }
+
+  // Give JSMpeg time to initialize before capturing the stream
+  setTimeout(convertCanvasToVideo, 3000); // 3 seconds delay
 
   </script>
   <script src="./face-api.min.js"></script>

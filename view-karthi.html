@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Stream with Face Detection</title>
+  <!--   <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script> -->
+  
+
+  <script type="text/javascript" src="jsmpeg.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #111;
+      text-align: center;
+      color: white;
+    }
+    video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video-element" autoplay playsinline></video>
+  <canvas id="overlay"></canvas>
+  <canvas id="hidden-canvas" style="display: none;"></canvas> <!-- Offscreen Canvas -->
+
+  <script src="./face-api.min.js"></script>
+  <script>
+    const videoElement = document.getElementById('video-element');
+    const overlayCanvas = document.getElementById('overlay');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const hiddenCanvas = document.getElementById('hidden-canvas'); // Hidden canvas for conversion
+    const hiddenCtx = hiddenCanvas.getContext('2d');
+    const url = 'ws://' + document.location.hostname + ':8082/';
+
+    // JSMpeg Player
+    const player = new JSMpeg.Player(url, { canvas: hiddenCanvas, disableWebGL: true });
+
+
+    // Set canvas size
+    function resizeOverlay() {
+      overlayCanvas.width = videoElement.clientWidth;
+      overlayCanvas.height = videoElement.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeOverlay);
+    resizeOverlay();
+
+    // Convert the hidden JSMpeg canvas into a video stream
+    function startCanvasToVideo() {
+      const stream = hiddenCanvas.captureStream(30); // Capture canvas as a MediaStream (30 FPS)
+      videoElement.srcObject = stream;
+    }
+
+    // Start conversion after JSMpeg initializes
+    setTimeout(startCanvasToVideo, 1000);
+
+    // Load face-api.js models
+    async function loadModels() {
+      const MODEL_URL = './models';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      console.log('Face detection model loaded');
+    }
+
+    // Perform face detection
+    async function detectFaces() {
+      if (!hiddenCanvas || !overlayCanvas) return;
+
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      const detections = await faceapi.detectAllFaces(
+        hiddenCanvas,
+        new faceapi.TinyFaceDetectorOptions()
+      );
+
+      // Draw face boxes on overlay
+      detections.forEach(detection => {
+        const { x, y, width, height } = detection.box;
+        overlayCtx.strokeStyle = '#00FF00';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.strokeRect(x, y, width, height);
+      });
+
+      requestAnimationFrame(detectFaces);
+    }
+
+    // Start application
+    (async function startApp() {
+      await loadModels();
+      detectFaces();
+    })();
+  </script>
+</body>
+</html>
